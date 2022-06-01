@@ -1,6 +1,6 @@
 {
-  "name": "symbol-seeker",
-  "displayName": "symbol-seeker",
+  "name": "vs-symbol-seeker",
+  "displayName": "Symbol Seeker",
   "description": "",
   "version": "0.0.1",
   "engines": {
