@@ -12,36 +12,64 @@ import {
 import * as cp from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import { generateCTagsCmd, DEFAULT_EXCLUSIONS } from "../settings";
+import {
+  generateCTagsCmd,
+  DEFAULT_EXCLUSIONS,
+  EXCLUDE_SYMBOLS,
+} from "../settings";
 import { ICON_MAPPING } from "../icons";
 import { CTagJson, CTagLine } from "../types";
+import { glob } from "glob";
+
+const wsPath = workspace?.workspaceFolders?.[0].uri.path;
+
+const readGitIgnore = (path: string, exclusions: string[]) => {
+  const data = fs.readFileSync(path, "utf8");
+  let prefixPath = path.replace(wsPath!, "").replace("/.gitignore", "");
+  if (prefixPath) prefixPath = prefixPath + "/";
+  exclusions.push(
+    ...data
+      .trim()
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => !!line)
+      // Exclude Comments and Globs and exclusions
+      .filter(
+        (line) =>
+          !line.startsWith("#") && !line.includes("**") && !line.startsWith("!")
+      )
+      // Exclude line if it exists in root
+      .filter((line) => !exclusions.includes(line))
+      // Use only local path for cmd so it doesn't grow to large
+      .map((line) => prefixPath + line)
+  );
+};
 
 export const searchCmd = async () => {
-  const wsPath = workspace?.workspaceFolders?.[0].uri.path;
   if (!wsPath) return;
 
   const exclusions = [...DEFAULT_EXCLUSIONS];
-  if (fs.existsSync(`${wsPath}/.gitignore`)) {
-    const data = fs.readFileSync(`${wsPath}/.gitignore`, "utf8");
-    exclusions.push(
-      ...data
-        .trim()
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => !!line)
-        .filter((line) => !line.startsWith("#"))
-    );
+
+  const gitignores = glob
+    .sync(`${wsPath}/**/.gitignore`)
+    .filter((path) => DEFAULT_EXCLUSIONS.every((ex) => !path.includes(ex)));
+  for (const gitIgnorePath of gitignores) {
+    readGitIgnore(gitIgnorePath, exclusions);
   }
 
-  const cmd = generateCTagsCmd(wsPath, exclusions);
+  const cmd = generateCTagsCmd(wsPath, [...new Set(exclusions)]);
   console.log("Running '" + cmd + "'");
   // 10MB Buffer
   cp.exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
     // TODO: Add Logging
     if (err) return;
 
-    const ctags: CTagJson[] = JSON.parse(
+    const ctagsUnfiltered: CTagJson[] = JSON.parse(
       `[${stdout.trim().split("\n").join(",")}]`
+    );
+
+    const ctags = ctagsUnfiltered.filter(
+      ({ name }) => !EXCLUDE_SYMBOLS.includes(name.toLocaleLowerCase())
     );
     const cTagNames = ctags.map(({ name }) => name.toLocaleLowerCase());
 

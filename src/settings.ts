@@ -5,7 +5,17 @@ export const DEFAULT_EXCLUSIONS = [
   "*.scss",
   "*.md",
   "*.yml",
+  ".fvm",
+  "Pods",
+  ".symlinks",
+  "public",
+  "coverage",
+  "ios",
+  "android",
+  ".dart_tool",
 ];
+
+export const EXCLUDE_SYMBOLS = ["main"];
 
 const BASE_CMD =
   "/usr/bin/env ctags --recurse --output-format=json --extras=f --fields=+n";
