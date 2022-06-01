@@ -3,11 +3,19 @@
 import * as vscode from "vscode";
 import * as cp from "child_process";
 import * as fs from "fs";
+import * as path from "path";
 
-const DEFAULT_EXCLUSIONS = ["*.json", "*.min.*", "*.css", "*.scss"];
+const DEFAULT_EXCLUSIONS = [
+  "*.json",
+  "*.min.*",
+  "*.css",
+  "*.scss",
+  "*.md",
+  "*.yml",
+];
 
 const CMD = (folder: string, exclusions: string[]) =>
-  `/opt/homebrew/bin/ctags --recurse --output-format=json --fields=+n ${exclusions
+  `/opt/homebrew/bin/ctags --recurse --output-format=json --extras=f --fields=+n ${exclusions
     .map((e) => `--exclude='${e}'`)
     .join(" ")} ${folder}/`;
 
@@ -24,10 +32,27 @@ type CTagJson = {
     | "interface"
     | "method"
     | "namespace"
-    | "property";
+    | "property"
+    | "file";
   scope: string | null;
   scopeKind: "function" | "interface" | "namespace" | null;
 };
+
+const ICON_MAPPING: Record<CTagJson["kind"], string> = {
+  function: "symbol-package",
+  constant: "symbol-constant",
+  method: "symbol-package",
+  alias: "symbol-constant",
+  interface: "symbol-interface",
+  namespace: "symbol-namespace",
+  property: "symbol-property",
+  file: "symbol-file",
+};
+
+interface CTagLine extends vscode.QuickPickItem {
+  line: number;
+  path: string;
+}
 
 export function activate(context: vscode.ExtensionContext) {
   console.log(
@@ -38,13 +63,12 @@ export function activate(context: vscode.ExtensionContext) {
   const helloWorldCmd = vscode.commands.registerCommand(
     "symbol-seeker.helloWorld",
     async () => {
-      const path = vscode.workspace?.workspaceFolders?.[0].uri.path;
-      if (!path) {
-        return;
-      }
+      const wsPath = vscode.workspace?.workspaceFolders?.[0].uri.path;
+      if (!wsPath) return;
+
       const exclusions = [...DEFAULT_EXCLUSIONS];
-      if (fs.existsSync(`${path}/.gitignore`)) {
-        const data = fs.readFileSync(`${path}/.gitignore`, "utf8");
+      if (fs.existsSync(`${wsPath}/.gitignore`)) {
+        const data = fs.readFileSync(`${wsPath}/.gitignore`, "utf8");
         exclusions.push(
           ...data
             .trim()
@@ -55,7 +79,7 @@ export function activate(context: vscode.ExtensionContext) {
         );
       }
 
-      const cmd = CMD(path, exclusions);
+      const cmd = CMD(wsPath, exclusions);
       console.log("Running '" + cmd + "'");
       // 10MB Buffer
       cp.exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
@@ -64,13 +88,25 @@ export function activate(context: vscode.ExtensionContext) {
         const ctags: CTagJson[] = JSON.parse(
           `[${stdout.trim().split("\n").join(",")}]`
         );
-        const quickPick = vscode.window.createQuickPick();
-        quickPick.items = ctags.map((ctag) => ({
-          label: ctag.name,
-          description: ctag.path.replace(path, ""),
-        }));
 
-        quickPick.title = "Choose your favorite value:";
+        const quickPick = vscode.window.createQuickPick<CTagLine>();
+        const cTagNames = ctags.map(({ name }) => name.toLocaleLowerCase());
+
+        quickPick.items = ctags.map((ctag) => {
+          const isDuplicate = cTagNames.includes(ctag.name.toLocaleLowerCase());
+          return {
+            label: `$(${ICON_MAPPING[ctag.kind] ?? ""}) ${ctag.name} ${
+              isDuplicate ? `(${path.extname(ctag.path)})` : ""
+            }`,
+            description:
+              ctag.path.replace(wsPath, "") +
+              (isDuplicate ? `:${ctag.line}` : ""),
+            line: ctag.line,
+            path: ctag.path,
+          };
+        });
+
+        quickPick.title = "Search for a Symbol or File";
 
         // quickPick.onDidChangeValue(() => {
         //   // INJECT user values into proposed values
@@ -81,9 +117,23 @@ export function activate(context: vscode.ExtensionContext) {
         //   }
         // });
 
-        quickPick.onDidAccept(() => {
-          const selection = quickPick.activeItems[0];
-          vscode.window.showInformationMessage(`Got: ${selection.label}`);
+        quickPick.onDidAccept(async () => {
+          const { description, line, path } = quickPick.activeItems[0];
+          const uri = vscode.Uri.file(path);
+          await vscode.window.showTextDocument(uri, {});
+          if (!vscode.window.activeTextEditor) return;
+
+          const position = new vscode.Position(line - 1, 0);
+          var range = new vscode.Range(position, position);
+          console.log("Revealing Line " + line);
+          vscode.window.activeTextEditor.revealRange(
+            range,
+            vscode.TextEditorRevealType.InCenter
+          );
+
+          vscode.window.activeTextEditor!.selections = [
+            new vscode.Selection(position, position),
+          ];
 
           quickPick.hide();
         });
@@ -92,15 +142,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  const generateTagsCmd = vscode.commands.registerCommand(
-    "symbol-seeker.generateTags",
-    () => {
-      // Todo run ctags
-    }
-  );
-
   context.subscriptions.push(helloWorldCmd);
-  context.subscriptions.push(generateTagsCmd);
 }
 
 // this method is called when your extension is deactivated
