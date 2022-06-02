@@ -1,8 +1,9 @@
 {
   "name": "vs-symbol-seeker",
   "displayName": "Symbol Seeker",
-  "description": "",
-  "version": "0.0.3",
+  "description": "Fast workspace-wide fuzzy search for symbols & files, powered by ctags.",
+  "publisher": "dock51",
+  "version": "0.0.4",
   "engines": {
     "vscode": "^1.67.0"
   },
@@ -11,9 +12,22 @@
     "type": "git",
     "url": "https://github.com/sinnaj-r/vscode-symbol-seeker.git"
   },
+  "homepage": "https://github.com/sinnaj-r/vscode-symbol-seeker/blob/main/README.md",
+  "qna": "https://github.com/sinnaj-r/vscode-symbol-seeker/issues",
+  "bugs": {
+    "url": "https://github.com/sinnaj-r/vscode-symbol-seeker/issues"
+  },
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "Fuzzy",
+    "Search",
+    "Symbol-Search",
+    "File-Search",
+    "CTags"
+  ],
+  "icon": "assets/Logo.png",
   "activationEvents": [
     "onStartupFinished",
     "onCommand:symbol-seeker.search"
