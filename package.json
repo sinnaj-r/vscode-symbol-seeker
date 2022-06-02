@@ -2,9 +2,14 @@
   "name": "vs-symbol-seeker",
   "displayName": "Symbol Seeker",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.67.0"
+  },
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sinnaj-r/vscode-symbol-seeker.git"
   },
   "categories": [
     "Other"
