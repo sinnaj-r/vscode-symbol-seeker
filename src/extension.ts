@@ -14,6 +14,7 @@ import {
 } from "./cacheManager/CacheManager";
 import { forceRefreshCmd } from "./commands/forceRefreshCmd";
 import { searchCmd } from "./commands/searchCmd";
+import { setExtensionPath } from "./ExtensionPath";
 
 let watcher: FileSystemWatcher;
 
@@ -22,6 +23,8 @@ export function activate(context: ExtensionContext) {
     'The extension "symbol-seeker" is now active! In Workspace: ' +
       workspace?.workspaceFolders?.[0].uri.path
   );
+
+  setExtensionPath(context.extensionPath);
 
   createCacheManager(context.workspaceState);
 
@@ -55,9 +58,6 @@ export function activate(context: ExtensionContext) {
       cacheManagerInstance?.updateExclusions();
     else cacheManagerInstance?.clear(uri.fsPath);
   });
-
-  //TODO replace EXTENSION_PATH with this
-  const path = context.extensionPath;
 
   context.subscriptions.push(registeredSearchCmd);
   context.subscriptions.push(registeredForceRefreshCmd);

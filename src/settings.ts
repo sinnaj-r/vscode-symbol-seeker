@@ -20,6 +20,4 @@ export const DEFAULT_EXCLUSIONS = [
   "*.js",
 ];
 
-export const EXTENSION_PATH =
-  "/Users/jannis/Dropbox/Programmieren/VSCode/symbol-seeker";
 export const EXCLUDE_SYMBOLS = ["main"];

@@ -1,9 +1,14 @@
-import { EXTENSION_PATH } from "../settings";
+import { getExtensionPath } from "../ExtensionPath";
 
-//TODO dynamically add all '.ctags' files
-const BASE_CMD = `/usr/bin/env ctags --recurse --options=${EXTENSION_PATH}/ctags-optlibs/dart.ctags --output-format=json --extras=f --fields=+n`;
+export const generateCTagsCmd = (
+  folderOrFile: string,
+  exclusions: string[]
+) => {
+  //TODO dynamically add all '.ctags' files
 
-export const generateCTagsCmd = (folderOrFile: string, exclusions: string[]) =>
-  `${BASE_CMD} ${exclusions
+  const baseCmd = `/usr/bin/env ctags --recurse --options=${getExtensionPath()}/ctags-optlibs/dart.ctags --output-format=json --extras=f --fields=+n`;
+
+  return `${baseCmd} ${exclusions
     .map((e) => `--exclude='${e}'`)
     .join(" ")} ${folderOrFile}/`;
+};
