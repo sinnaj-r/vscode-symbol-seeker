@@ -2,6 +2,10 @@
 
 All notable changes to the "symbol-seeker" extension will be documented in this file.
 
+## [0.0.3]
+- Add a custom fuzzy matching system
+- fix duplicate entry bug
+
 ## [0.0.2]
 
 - Improved Icons
