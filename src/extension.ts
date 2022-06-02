@@ -14,6 +14,9 @@ export function activate(context: ExtensionContext) {
     searchCmd
   );
 
+  //TODO replace EXTENSION_PATH with this
+  const path = context.extensionPath;
+
   context.subscriptions.push(registeredSearchCmd);
 }
 
