@@ -17,3 +17,17 @@ export const groupBy = <T, K extends keyof any>(arr: T[], key: (i: T) => K) =>
     (groups[key(item)] ||= []).push(item);
     return groups;
   }, {} as Record<K, T[]>);
+
+export const debounce = <F extends (...args: any[]) => any, R>(
+  func: F,
+  waitFor: number
+) => {
+  let timeout: NodeJS.Timeout;
+
+  const debounced = (...args: Parameters<F>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), waitFor);
+  };
+
+  return debounced;
+};

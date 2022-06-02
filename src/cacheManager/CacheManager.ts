@@ -52,7 +52,8 @@ export class CacheManager {
     for (const path of paths) await this.clear(path);
 
     const ctags = await this.loadTagsForAllFiles();
-    for (const [path, tags] of Object.entries(ctags)) this.set(path, tags);
+    for (const [path, tags] of Object.entries(ctags))
+      await this.set(path, tags);
     console.debug(`Initialized Cache for ${Object.keys(ctags).length} paths`);
     this.status = Status.Initialized;
   }
@@ -65,7 +66,7 @@ export class CacheManager {
     if (this.status == Status.Initializing) return;
     console.debug("Updating Cache for " + path);
     const cTags = await this.loadTagsForFile(path);
-    this.set(path, cTags);
+    await this.set(path, cTags);
   }
 
   private getExclusions(): string[] {
