@@ -19,6 +19,10 @@
       {
         "command": "symbol-seeker.search",
         "title": "Search for Symbol or File"
+      },
+      {
+        "command": "symbol-seeker.force-refresh",
+        "title": "Force-Refresh the Symbol Cache"
       }
     ]
   },

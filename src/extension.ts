@@ -10,8 +10,10 @@ import {
   CacheManager,
   cacheManagerInstance,
   createCacheManager,
+  Status,
 } from "./cacheManager/CacheManager";
-import { searchCmd } from "./commands/searchCommand";
+import { forceRefreshCmd } from "./commands/forceRefreshCmd";
+import { searchCmd } from "./commands/searchCmd";
 
 let watcher: FileSystemWatcher;
 
@@ -22,13 +24,21 @@ export function activate(context: ExtensionContext) {
   );
 
   createCacheManager(context.workspaceState);
-  cacheManagerInstance!.initializeCache();
+
+  if (cacheManagerInstance?.status == Status.NotInitialized)
+    cacheManagerInstance!.initializeCache();
 
   const registeredSearchCmd = commands.registerCommand(
     "symbol-seeker.search",
     searchCmd
   );
 
+  const registeredForceRefreshCmd = commands.registerCommand(
+    "symbol-seeker.force-refresh",
+    forceRefreshCmd
+  );
+
+  // TODO: Somehow watch out for the exclusions here to reduce overhead
   watcher = workspace.createFileSystemWatcher("**/*");
   watcher.onDidChange((uri) => {
     if (uri.fsPath.endsWith(".gitignore"))
@@ -50,6 +60,7 @@ export function activate(context: ExtensionContext) {
   const path = context.extensionPath;
 
   context.subscriptions.push(registeredSearchCmd);
+  context.subscriptions.push(registeredForceRefreshCmd);
 }
 
 // this method is called when your extension is deactivated
