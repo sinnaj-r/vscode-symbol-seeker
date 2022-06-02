@@ -14,7 +14,12 @@ export type CTagJson = {
     | "method"
     | "namespace"
     | "property"
-    | "file";
+    | "file"
+    | "class"
+    | "variable"
+    | "enum"
+    | "enumerator"
+    | "id";
   scope: string | null;
   scopeKind: "function" | "interface" | "namespace" | null;
 };
@@ -22,4 +27,5 @@ export type CTagJson = {
 export interface CTagLine extends QuickPickItem {
   line: number;
   path: string;
+  tagKind: CTagJson["kind"];
 }

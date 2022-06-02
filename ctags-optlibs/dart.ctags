@@ -1,5 +1,7 @@
 --langdef=Dart
 --langmap=dart:.dart
+
+#Comment
 --regex-dart=/^[ \t]*#//{exclusive}
 
 # Ignore return & awaits, as they indistinguishable from function definitions
@@ -9,5 +11,8 @@
 # Ignore lambda functions
 --regex-dart=/^[ \t]*void Function//{exclusive}
 
---regex-dart=/^[ \t]*class[ \t]+([a-zA-Z0-9_]+)/\1/c,classes/
+# Class Definition
+--regex-dart=/^[ \t]*class[ \t]+([a-zA-Z0-9_]+)/\1/c,class/
+
+# Method Definition
 --regex-dart=/^[ \t]*([ \t]static[ \t])?([a-zA-Z0-9_<>]+)[ \t]+([a-zA-Z0-9_]+)[ \t]*\(/\3/f,function/

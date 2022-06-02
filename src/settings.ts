@@ -13,6 +13,9 @@ export const DEFAULT_EXCLUSIONS = [
   "ios",
   "android",
   ".dart_tool",
+  "*.patch",
+  "*.xml",
+
   // Very specific usecase
   "*.js",
 ];

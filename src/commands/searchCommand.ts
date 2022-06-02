@@ -58,31 +58,39 @@ export const searchCmd = async () => {
     const quickPick = vscWindow.createQuickPick<CTagLine>();
     quickPick.title = "Search for a Symbol or File";
 
-    quickPick.items = ctags.map((ctag) => {
+    quickPick.items = ctags.map(({ name, line, path: ctagPath, kind }) => {
       // Does a symbol with the same name exists ?
       // -> Add additional context for the user
-      const isDuplicate = cTagNames.includes(ctag.name.toLocaleLowerCase());
+      const isDuplicate = cTagNames.includes(name.toLocaleLowerCase());
 
       return {
-        label: `$(${ICON_MAPPING[ctag.kind] ?? ""}) ${ctag.name} ${
-          isDuplicate ? `(${path.extname(ctag.path)})` : ""
+        label: `$(${ICON_MAPPING[kind] ?? ""}) ${name} ${
+          isDuplicate ? `(${path.extname(ctagPath)})` : ""
         }`,
         description:
-          ctag.path.replace(wsPath, "") + (isDuplicate ? `:${ctag.line}` : ""),
-        line: ctag.line,
-        path: ctag.path,
+          ctagPath.replace(wsPath, "") + (isDuplicate ? `:${line}` : ""),
+        line,
+        path: ctagPath,
+        tagKind: kind,
       };
     });
 
     quickPick.onDidAccept(async () => {
-      const { line, path } = quickPick.activeItems[0];
+      const item = quickPick.activeItems[0];
+      const { line, path } = item;
+      console.log("Selected Item: " + JSON.stringify(item));
+      console.log(
+        "Other Tags on file: " +
+          JSON.stringify(ctags.filter(({ path: p }) => p == path))
+      );
+
       const uri = Uri.file(path);
       await vscWindow.showTextDocument(uri, {});
       if (!vscWindow.activeTextEditor) return;
 
       // It seems,that the Position is offset by 1
       const position = new Position(line - 1, 0);
-      var range = new Range(position, position);
+      const range = new Range(position, position);
 
       vscWindow.activeTextEditor.revealRange(
         range,
