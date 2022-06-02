@@ -1,18 +1,50 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-import { commands, workspace, ExtensionContext } from "vscode";
+import {
+  commands,
+  workspace,
+  ExtensionContext,
+  FileSystemWatcher,
+} from "vscode";
+import {
+  CacheManager,
+  cacheManagerInstance,
+  createCacheManager,
+} from "./cacheManager/CacheManager";
 import { searchCmd } from "./commands/searchCommand";
+
+let watcher: FileSystemWatcher;
 
 export function activate(context: ExtensionContext) {
   console.log(
-    'Congratulations, your extension "symbol-seeker" is now active! In Workspace: ' +
+    'The extension "symbol-seeker" is now active! In Workspace: ' +
       workspace?.workspaceFolders?.[0].uri.path
   );
+
+  createCacheManager(context.workspaceState);
+  cacheManagerInstance!.initializeCache();
 
   const registeredSearchCmd = commands.registerCommand(
     "symbol-seeker.search",
     searchCmd
   );
+
+  watcher = workspace.createFileSystemWatcher("**/*");
+  watcher.onDidChange((uri) => {
+    if (uri.fsPath.endsWith(".gitignore"))
+      cacheManagerInstance?.updateExclusions();
+    else cacheManagerInstance?.updateCacheForFile(uri.fsPath);
+  });
+  watcher.onDidCreate((uri) => {
+    if (uri.fsPath.endsWith(".gitignore"))
+      cacheManagerInstance?.updateExclusions();
+    else cacheManagerInstance?.updateCacheForFile(uri.fsPath);
+  });
+  watcher.onDidDelete((uri) => {
+    if (uri.fsPath.endsWith(".gitignore"))
+      cacheManagerInstance?.updateExclusions();
+    else cacheManagerInstance?.clear(uri.fsPath);
+  });
 
   //TODO replace EXTENSION_PATH with this
   const path = context.extensionPath;
@@ -21,4 +53,7 @@ export function activate(context: ExtensionContext) {
 }
 
 // this method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+  // Disable Watcher
+  watcher?.dispose();
+}

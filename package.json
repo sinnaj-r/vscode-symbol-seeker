@@ -10,6 +10,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onStartupFinished",
     "onCommand:symbol-seeker.search"
   ],
   "main": "./out/extension.js",
