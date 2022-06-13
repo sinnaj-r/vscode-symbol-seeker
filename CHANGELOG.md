@@ -2,6 +2,12 @@
 
 All notable changes to the "symbol-seeker" extension will be documented in this file.
 
+## [0.0.5]
+- Performance improvements
+- Small fixes to dart support
+- Fix a Change-Handler-Bug
+- Add more default ignores
+
 ## [0.0.4]
 - Add logo
 - publish to marketplace

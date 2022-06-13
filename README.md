@@ -19,6 +19,10 @@ _This is a heavy Work-In-Progress! May not work for your usecase!_
 
 _Please make sure the `ctags`-executable is in your PATH-Variable_
 
+## Changelog
+
+Please take a look at the [CHANGELOG.md](CHANGELOG.md) File.
+
 ## Extension Settings
 
 _No Settings as of now_
