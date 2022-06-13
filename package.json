@@ -32,8 +32,8 @@
   ],
   "icon": "assets/Logo.png",
   "activationEvents": [
-    "onStartupFinished"
-    
+    "onStartupFinished",
+    "onCommand:symbol-seeker.search"
   ],
   "main": "./out/extension.js",
   "contributes": {

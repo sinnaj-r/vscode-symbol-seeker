@@ -7,6 +7,7 @@ import { CTagJson } from "../types";
 import { generateCTagsCmd } from "./generateCTagsCmd";
 
 export type FileTagsRecord = Record<string, CTagJson[]>;
+export type CacheType = Record<string, CTagJson[] | undefined>;
 
 export enum Status {
   NotInitialized,
@@ -25,24 +26,45 @@ export class CacheManager {
     this.status = Status.NotInitialized;
   }
 
+  private async update(key: string, value: CTagJson[] | undefined) {
+    const original = this.workspaceState.get<CacheType>("cache") ?? {};
+    original[key] = value;
+    await this.workspaceState.update("cache", original);
+    //await this.workspaceState.update(key, value);
+  }
+
   async set(key: string, value: CTagJson[]) {
-    await this.workspaceState.update(key, value);
+    await this.update(key, value);
+  }
+
+  async updateCache(cache: CacheType) {
+    await this.workspaceState.update("cache", cache);
   }
 
   async clear(key: string) {
-    await this.workspaceState.update(key, undefined);
+    await this.update(key, undefined);
   }
 
+  async clearCache() {
+    await this.workspaceState.update("cache", undefined);
+  }
+
+  // unused, remove ?
   get(key: string): CTagJson[] {
-    return this.workspaceState.get<CTagJson[]>(key) ?? [];
+    return this.getCache()[key] ?? [];
+  }
+
+  getCache() {
+    return this.workspaceState.get<CacheType>("cache") ?? {};
   }
   getAllPaths() {
-    return this.workspaceState.keys();
+    return Object.keys(this.getCache());
   }
 
   getAllTags(): CTagJson[] {
-    const paths = this.getAllPaths();
-    return paths.flatMap((path) => this.get(path));
+    return Object.values(this.getCache())
+      .filter<CTagJson[]>((i): i is CTagJson[] => !!i)
+      .flat();
   }
 
   tryInitializeCache() {
@@ -57,22 +79,14 @@ export class CacheManager {
 
     if (!ignoreStatus) this.status = Status.Initializing;
 
-    console.time("initializeCache");
+    console.time("Initialized Symbol Cache in");
 
-    console.time("getAllPaths");
-    const paths = this.getAllPaths();
-    console.timeEnd("getAllPaths");
-    console.time("clear paths");
-    for (const path of paths) await this.clear(path);
-    console.timeEnd("clear paths");
+    await this.clearCache();
 
-    console.time("loadTagsForAllFiles");
     const ctags = await this.loadTagsForAllFiles();
-    for (const [path, tags] of Object.entries(ctags))
-      await this.set(path, tags);
-    console.timeEnd("loadTagsForAllFiles");
+    this.updateCache(ctags);
 
-    console.timeEnd("initializeCache");
+    console.timeEnd("Initialized Symbol Cache in");
     console.log(
       `Initialized Cache for ${Object.keys(ctags).length} paths with ${
         Object.values(ctags).flat().length
@@ -121,9 +135,9 @@ export class CacheManager {
   private async runCTagsCmd(path: string) {
     const cmd = generateCTagsCmd(path, this.exclusions);
 
-    console.time("Execute ctags cmd");
+    console.time("Executed ctags cmd in");
     const result = await execCmd(cmd);
-    console.timeEnd("Execute ctags cmd");
+    console.timeEnd("Executed ctags cmd in");
 
     const cTagsUnfiltered: CTagJson[] = JSON.parse(
       `[${result.trim().split("\n").join(",")}]`
@@ -145,7 +159,8 @@ export class CacheManager {
     const wsPath = getWsPath();
     if (!wsPath) return {};
 
-    const cTags = await this.runCTagsCmd(wsPath);
+    // ws-path is folder without '/'
+    const cTags = await this.runCTagsCmd(wsPath + "/");
 
     return groupBy(cTags, ({ path }) => path);
   }
@@ -154,7 +169,7 @@ export class CacheManager {
     const wsPath = getWsPath();
     if (!wsPath) return [];
 
-    const cTags = await this.runCTagsCmd(wsPath);
+    const cTags = await this.runCTagsCmd(path);
     return cTags;
   }
 }

@@ -17,6 +17,7 @@ export const DEFAULT_EXCLUSIONS = [
   ".dart_tool",
   "*.patch",
   "*.xml",
+  ".git",
 
   // Very specific usecase
   "*.js",
