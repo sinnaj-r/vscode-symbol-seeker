@@ -30,3 +30,5 @@ _No Settings as of now_
 - Add _not found_-Options e.g. do a full-text-search, search git history, etc.
 - Add more user facing errors: e.g. CTags is not installed, No Workspace is opened, etc.
 - Add Tests
+- Improve Matching for paths pasted in search bar
+- Support multiple workspaces

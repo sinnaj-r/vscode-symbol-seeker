@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "fs";
 import { Memento, workspace } from "vscode";
-import { execCmd, getWsPath, groupBy } from "../helpers";
+import { execCmd, getWsPath, groupBy, tagIsPrivateConstant } from "../helpers";
 import { DEFAULT_EXCLUSIONS, EXCLUDE_SYMBOLS } from "../settings";
 import * as cp from "child_process";
 import { CTagJson } from "../types";
@@ -45,16 +45,39 @@ export class CacheManager {
     return paths.flatMap((path) => this.get(path));
   }
 
-  async initializeCache() {
+  tryInitializeCache() {
     if (this.status == Status.Initializing) return;
     this.status = Status.Initializing;
-    const paths = this.getAllPaths();
-    for (const path of paths) await this.clear(path);
 
+    this.initializeCache(true);
+  }
+
+  async initializeCache(ignoreStatus = false) {
+    if (!ignoreStatus && this.status == Status.Initializing) return;
+
+    if (!ignoreStatus) this.status = Status.Initializing;
+
+    console.time("initializeCache");
+
+    console.time("getAllPaths");
+    const paths = this.getAllPaths();
+    console.timeEnd("getAllPaths");
+    console.time("clear paths");
+    for (const path of paths) await this.clear(path);
+    console.timeEnd("clear paths");
+
+    console.time("loadTagsForAllFiles");
     const ctags = await this.loadTagsForAllFiles();
     for (const [path, tags] of Object.entries(ctags))
       await this.set(path, tags);
-    console.debug(`Initialized Cache for ${Object.keys(ctags).length} paths`);
+    console.timeEnd("loadTagsForAllFiles");
+
+    console.timeEnd("initializeCache");
+    console.log(
+      `Initialized Cache for ${Object.keys(ctags).length} paths with ${
+        Object.values(ctags).flat().length
+      } tags`
+    );
     this.status = Status.Initialized;
   }
 
@@ -64,7 +87,7 @@ export class CacheManager {
 
   async updateCacheForFile(path: string) {
     if (this.status == Status.Initializing) return;
-    console.debug("Updating Cache for " + path);
+    console.log("Updating Cache for " + path);
     const cTags = await this.loadTagsForFile(path);
     await this.set(path, cTags);
   }
@@ -98,16 +121,23 @@ export class CacheManager {
   private async runCTagsCmd(path: string) {
     const cmd = generateCTagsCmd(path, this.exclusions);
 
-    // 10MB Buffer
+    console.time("Execute ctags cmd");
     const result = await execCmd(cmd);
+    console.timeEnd("Execute ctags cmd");
 
     const cTagsUnfiltered: CTagJson[] = JSON.parse(
       `[${result.trim().split("\n").join(",")}]`
     );
 
     const cTags = cTagsUnfiltered.filter(
-      ({ name }) => !EXCLUDE_SYMBOLS.includes(name.toLocaleLowerCase())
+      (tag) =>
+        !EXCLUDE_SYMBOLS.includes(tag.name.toLocaleLowerCase()) &&
+        // We want to ignore constants in method bodies,
+        // as they are most likely just a "temporary" variable
+        // e.g. in TypeScript this is very usual
+        !tagIsPrivateConstant(tag)
     );
+
     return cTags;
   }
 

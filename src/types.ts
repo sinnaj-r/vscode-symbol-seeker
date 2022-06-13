@@ -21,7 +21,7 @@ export type CTagJson = {
     | "enumerator"
     | "id";
   scope: string | null;
-  scopeKind: "function" | "interface" | "namespace" | null;
+  scopeKind: "function" | "interface" | "namespace" | "method" | null;
 };
 
 export interface CTagLine extends QuickPickItem {

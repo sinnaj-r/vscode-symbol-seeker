@@ -20,6 +20,8 @@ export const DEFAULT_EXCLUSIONS = [
 
   // Very specific usecase
   "*.js",
+  "*.test.ts",
+  "*_test.dart",
 ];
 
 export const EXCLUDE_SYMBOLS = ["main"];

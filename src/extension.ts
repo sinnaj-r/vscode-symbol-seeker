@@ -15,21 +15,23 @@ import {
 import { forceRefreshCmd } from "./commands/forceRefreshCmd";
 import { searchCmd } from "./commands/searchCmd";
 import { setExtensionPath } from "./ExtensionPath";
+import { getWsPath } from "./helpers";
 
 let watcher: FileSystemWatcher;
 
 export function activate(context: ExtensionContext) {
   console.log(
-    'The extension "symbol-seeker" is now active! In Workspace: ' +
-      workspace?.workspaceFolders?.[0].uri.path
+    'The extension "symbol-seeker" is now active! In Workspace: ' + getWsPath()
   );
 
   setExtensionPath(context.extensionPath);
-
   createCacheManager(context.workspaceState);
 
+  console.log("Init run with status " + cacheManagerInstance?.status);
+
+  const key = `status-${getWsPath()}`;
   if (cacheManagerInstance?.status == Status.NotInitialized)
-    cacheManagerInstance!.initializeCache();
+    cacheManagerInstance!.tryInitializeCache();
 
   const registeredSearchCmd = commands.registerCommand(
     "symbol-seeker.search",
@@ -65,6 +67,10 @@ export function activate(context: ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() {
+  console.log(
+    'The extension "symbol-seeker" is now INactive! In Workspace: ' +
+      getWsPath()
+  );
   // Disable Watcher
   watcher?.dispose();
 }

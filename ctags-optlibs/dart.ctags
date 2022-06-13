@@ -4,9 +4,10 @@
 #Comment
 --regex-dart=/^[ \t]*#//{exclusive}
 
-# Ignore return & awaits, as they indistinguishable from function definitions
+# Ignore return, awaits & throws as they indistinguishable from function definitions
 --regex-dart=/^[ \t]*return//{exclusive}
 --regex-dart=/^[ \t]*await//{exclusive}
+--regex-dart=/^[ \t]*throw//{exclusive}
 
 # Ignore lambda functions
 --regex-dart=/^[ \t]*void Function//{exclusive}

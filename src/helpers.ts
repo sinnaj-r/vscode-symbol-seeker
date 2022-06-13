@@ -1,10 +1,12 @@
 import { workspace } from "vscode";
 import * as cp from "child_process";
+import { CTagJson } from "./types";
 
 export const getWsPath = () => workspace?.workspaceFolders?.[0].uri.path;
 
 export const execCmd = (cmd: string) =>
   new Promise<string>((res, rej) => {
+    // 10MB Buffer
     cp.exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
       if (err) return rej(err);
       if (stderr) console.warn("Stderr: " + stderr);
@@ -31,3 +33,10 @@ export const debounce = <F extends (...args: any[]) => any, R>(
 
   return debounced;
 };
+
+/**
+ * Is this a constant in a method body ?
+ *
+ */
+export const tagIsPrivateConstant = ({ kind, scopeKind }: CTagJson) =>
+  kind == "constant" && scopeKind == "method";
