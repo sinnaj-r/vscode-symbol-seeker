@@ -128,6 +128,9 @@
             },
             "id": {
               "type": "number"
+            },
+            "currentFile": {
+              "type": "number"
             }
           },
           "default": {
@@ -143,7 +146,8 @@
             "class": 1,
             "enum": 1,
             "enumerator": 1,
-            "id": 1
+            "id": 1,
+            "currentFile": 0.01
           }
         }
       }

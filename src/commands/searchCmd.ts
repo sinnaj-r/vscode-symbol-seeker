@@ -24,22 +24,29 @@ import type F from "fuse.js";
 const Fuse: typeof FuseImport.default = FuseImport as any;
 
 const wsPath = getWsPath();
+const scoreModifiers = getScoreModifiers();
 
-// TODO: Apply modifiers based on kind & if it's in the current file
-const applyModifier = (item: F.FuseSortFunctionArg) => (item.score ?? 0) * 1; //SCORE_MODIFIERS[(item.item as unknown as CTagJson).kind];
+const applyModifier = (item: F.FuseSortFunctionArg, editorFile: string) =>
+  (item.score ?? 0) *
+  (editorFile == (item.item[2] as any).v
+    ? scoreModifiers["currentFile"]
+    : scoreModifiers[(item.item[4] as any).v as keyof typeof scoreModifiers]);
 
 const cTagToItem = (
   { name, path: ctagPath, line, kind }: CTagJson,
-  cTagNames: string[] = []
+  cTagNames: string[] = [],
+  editorFile: string
 ): CTagLine => {
   // Does a symbol with the same name exists ?
   // -> Add additional context for the user
   const isDuplicate = cTagNames.includes(name.toLocaleLowerCase());
 
   return {
-    label: `$(${ICON_MAPPING[kind] ?? ""}) ${name} ${
+    label: `${
+      editorFile == path.basename(ctagPath) ? "$(chevron-right)" : ""
+    } $(${ICON_MAPPING[kind] ?? ""}) ${name} ${
       isDuplicate ? `(${path.extname(ctagPath)})` : ""
-    }`,
+    }`.trim(),
     description:
       ctagPath.replace(wsPath!, "") + (isDuplicate ? `:${line}` : ""),
     line,
@@ -62,6 +69,10 @@ export const searchCmd = async () => {
 
   const cTags = cacheManagerInstance?.getAllTags() ?? [];
   const cTagNames = cTags.map(({ name }) => name.toLocaleLowerCase());
+
+  const editorFile = path.basename(
+    vscWindow.activeTextEditor?.document.fileName ?? ""
+  );
 
   //TODO: Persist instance over multiple searches (in Cache Manager)
   const fuse = new Fuse(cTags, {
@@ -91,16 +102,22 @@ export const searchCmd = async () => {
       // Just added for sorting
       { name: "kind", weight: 0.01 },
     ],
-    sortFn: (a, b) => applyModifier(a) - applyModifier(b),
+    shouldSort: true,
+    sortFn: (a, b) =>
+      applyModifier(a, editorFile) - applyModifier(b, editorFile),
   });
 
-  quickPick.items = fuse.search("").map((i) => cTagToItem(i.item));
+  quickPick.items = fuse
+    .search("")
+    .map((i) => cTagToItem(i.item, undefined, editorFile));
 
   quickPick.onDidChangeValue(
     debounce((term: string) => {
       const items = fuse.search(term);
 
-      quickPick.items = items.map((item) => cTagToItem(item.item, cTagNames));
+      quickPick.items = items.map((item) =>
+        cTagToItem(item.item, cTagNames, editorFile)
+      );
     }, 50)
   );
 

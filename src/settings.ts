@@ -30,7 +30,7 @@ export const getSymbolExclusions = () =>
     .get<string[]>("symbolExclusions") ?? ["main"];
 
 export const getScoreModifiers: () => Record<
-  CTagJson["kind"],
+  CTagJson["kind"] | "currentFile",
   number
 > = () => ({
   function: 1,
@@ -46,5 +46,6 @@ export const getScoreModifiers: () => Record<
   enum: 1,
   enumerator: 1,
   id: 1,
+  currentFile: 0.5,
   ...(workspace.getConfiguration("symbol-seeker").get("scoreModifiers") ?? {}),
 });
