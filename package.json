@@ -46,7 +46,108 @@
         "command": "symbol-seeker.force-refresh",
         "title": "Force-Refresh the Symbol Cache"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Symbol Seeker",
+      "properties": {
+        "symbol-seeker.fileExclusions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "What files should be excluded from symbol search. All patterns in .gitignore are added by default.",
+          "default": [
+            "*.json",
+            "*.min.*",
+            "*.css",
+            "*.scss",
+            "*.md",
+            "*.yml",
+            ".fvm",
+            "Pods",
+            ".symlinks",
+            "public",
+            "coverage",
+            "ios",
+            "android",
+            ".dart_tool",
+            "*.patch",
+            "*.xml",
+            ".git"
+          ]
+        },
+        "symbol-seeker.symbolExclusions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "What symbols should be excluded from symbol search.",
+          "default": [
+            "main"
+          ]
+        },
+        "symbol-seeker.scoreModifiers": {
+          "type": "object",
+          "description": "Add an additional weight modifier for specific result types",
+          "properties": {
+            "function": {
+              "type": "number"
+            },
+            "constant": {
+              "type": "number"
+            },
+            "variable": {
+              "type": "number"
+            },
+            "method": {
+              "type": "number"
+            },
+            "alias": {
+              "type": "number"
+            },
+            "interface": {
+              "type": "number"
+            },
+            "namespace": {
+              "type": "number"
+            },
+            "property": {
+              "type": "number"
+            },
+            "file": {
+              "type": "number"
+            },
+            "class": {
+              "type": "number"
+            },
+            "enum": {
+              "type": "number"
+            },
+            "enumerator": {
+              "type": "number"
+            },
+            "id": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "function": 1,
+            "constant": 1,
+            "variable": 1,
+            "method": 1,
+            "alias": 1,
+            "interface": 1,
+            "namespace": 1,
+            "property": 1,
+            "file": 1,
+            "class": 1,
+            "enum": 1,
+            "enumerator": 1,
+            "id": 1
+          }
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",

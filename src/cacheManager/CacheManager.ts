@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "fs";
 import { Memento, workspace } from "vscode";
 import { execCmd, getWsPath, groupBy, tagIsPrivateConstant } from "../helpers";
-import { DEFAULT_EXCLUSIONS, EXCLUDE_SYMBOLS } from "../settings";
+import { getFileExclusions, getSymbolExclusions } from "../settings";
 import * as cp from "child_process";
 import { CTagJson } from "../types";
 import { generateCTagsCmd } from "./generateCTagsCmd";
@@ -109,7 +109,7 @@ export class CacheManager {
   private getExclusions(): string[] {
     const wsPath = getWsPath();
     if (!wsPath) return [];
-    const exclusions = [...DEFAULT_EXCLUSIONS];
+    const exclusions = [...getFileExclusions()];
     if (existsSync(`${wsPath}/.gitignore`)) {
       const data = readFileSync(`${wsPath}/.gitignore`, "utf8");
       exclusions.push(
@@ -142,10 +142,11 @@ export class CacheManager {
     const cTagsUnfiltered: CTagJson[] = JSON.parse(
       `[${result.trim().split("\n").join(",")}]`
     );
+    const symbolExclusions = getSymbolExclusions();
 
     const cTags = cTagsUnfiltered.filter(
       (tag) =>
-        !EXCLUDE_SYMBOLS.includes(tag.name.toLocaleLowerCase()) &&
+        !symbolExclusions.includes(tag.name.toLocaleLowerCase()) &&
         // We want to ignore constants in method bodies,
         // as they are most likely just a "temporary" variable
         // e.g. in TypeScript this is very usual

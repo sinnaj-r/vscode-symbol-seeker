@@ -17,7 +17,7 @@ import { ICON_MAPPING } from "../icons";
 import { CTagJson, CTagLine } from "../types";
 import { cacheManagerInstance, Status } from "../cacheManager/CacheManager";
 import { debounce, getWsPath } from "../helpers";
-import { SCORE_MODIFIERS } from "../settings";
+import { getScoreModifiers } from "../settings";
 import * as FuseImport from "fuse.js";
 import type F from "fuse.js";
 
