@@ -2,6 +2,10 @@
 
 All notable changes to the "symbol-seeker" extension will be documented in this file.
 
+## [0.0.6]
+- Exclusions are now customizable in vscode settings
+- symbols of the current file have a higher weight
+
 ## [0.0.5]
 - Performance improvements
 - Small fixes to dart support

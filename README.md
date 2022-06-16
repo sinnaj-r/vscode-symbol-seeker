@@ -28,8 +28,6 @@ Please take a look at the [CHANGELOG.md](CHANGELOG.md) File.
 _No Settings as of now_
 
 ## ToDos & Improvements:
-- Move hardcoded settings to VSCode Settings
-- At search-weights, e.g. higher position for symbols of the current file
 - Add a special syntax/keywords to limit your search to a folder or file-extension _(most usecases are covered by just appending your search with the folder or extension)_
 - Add _not found_-Options e.g. do a full-text-search, search git history, etc.
 - Add more user facing errors: e.g. CTags is not installed, No Workspace is opened, etc.

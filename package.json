@@ -3,7 +3,7 @@
   "displayName": "Symbol Seeker",
   "description": "Fast workspace-wide fuzzy search for symbols & files, powered by ctags.",
   "publisher": "dock51",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "engines": {
     "vscode": "^1.67.0"
   },
