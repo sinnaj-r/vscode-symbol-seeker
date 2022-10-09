@@ -26,11 +26,22 @@ const Fuse: typeof FuseImport.default = FuseImport as any;
 const wsPath = getWsPath();
 const scoreModifiers = getScoreModifiers();
 
-const applyModifier = (item: F.FuseSortFunctionArg, editorFile: string) =>
-  (item.score ?? 0) *
-  (editorFile == (item.item[2] as any).v
-    ? scoreModifiers["currentFile"]
-    : scoreModifiers[(item.item[4] as any).v as keyof typeof scoreModifiers]);
+// Match the "."-Operator for extension search
+const extensionRegex = /\.[a-zA-Z.]{1,10}/;
+// Match the "/"-Operator for path search
+const pathRegex = /\/([\w/.]+)/;
+
+const applyModifier = (item: F.FuseSortFunctionArg, editorFile: string) => {
+  const modifiedScore =
+    (item.score ?? 0) *
+    (editorFile == (item.item[2] as any).v
+      ? scoreModifiers["currentFile"]
+      : scoreModifiers[(item.item[4] as any).v as keyof typeof scoreModifiers]);
+
+  //@ts-ignore
+  item.modifiedScore = modifiedScore;
+  return modifiedScore;
+};
 
 const cTagToItem = (
   { name, path: ctagPath, line, kind }: CTagJson,
@@ -80,12 +91,12 @@ export const searchCmd = async () => {
       {
         name: "name",
         getFn: (item) => item.name,
+        weight: 1.5,
       },
       // Improve searches by extension
       {
         name: "extension",
         getFn: (item) => path.extname(item.path),
-        weight: 1.2,
       },
       // Add the filename e.g. for function in filename
       {
@@ -97,7 +108,6 @@ export const searchCmd = async () => {
       {
         name: "path",
         getFn: (item) => path.dirname(item.path).replace(wsPath, ""),
-        weight: 0.3,
       },
       // Just added for sorting
       { name: "kind", weight: 0.01 },
@@ -105,6 +115,7 @@ export const searchCmd = async () => {
     shouldSort: true,
     sortFn: (a, b) =>
       applyModifier(a, editorFile) - applyModifier(b, editorFile),
+    includeScore: true,
   });
 
   quickPick.items = fuse
@@ -113,7 +124,29 @@ export const searchCmd = async () => {
 
   quickPick.onDidChangeValue(
     debounce((term: string) => {
-      const items = fuse.search(term);
+      const additionalOptions: F.Expression = { $and: [] };
+
+      // Search for the "."-Operator
+      const extensionMatch = extensionRegex.exec(term);
+      if (extensionMatch) {
+        additionalOptions["$and"]?.push({ extension: `'${extensionMatch[0]}` });
+        term = term.replace(extensionMatch[0], "").trim();
+      }
+
+      // Search for the "/"-Operator
+      const pathMatch = pathRegex.exec(term);
+      if (pathMatch) {
+        additionalOptions["$and"]?.push({ path: `${pathMatch[1]}` });
+        term = term.replace(pathMatch[0], "").trim();
+      }
+
+      // Only search in name & filename by default
+      const items = fuse.search({
+        $and: [
+          { $or: [{ name: term }, { filename: term }] },
+          ...(additionalOptions.$and ?? []),
+        ],
+      });
 
       quickPick.items = items.map((item) =>
         cTagToItem(item.item, cTagNames, editorFile)

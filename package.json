@@ -67,7 +67,7 @@
             "Pods",
             ".symlinks",
             "public",
-            "coverage",
+            "coverage*",
             "ios",
             "android",
             ".dart_tool",

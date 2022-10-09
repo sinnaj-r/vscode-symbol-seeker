@@ -6,8 +6,8 @@ export const getWsPath = () => workspace?.workspaceFolders?.[0].uri.path;
 
 export const execCmd = (cmd: string) =>
   new Promise<string>((res, rej) => {
-    // 10MB Buffer
-    cp.exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
+    // 512MB Buffer
+    cp.exec(cmd, { maxBuffer: 1024 * 1024 * 512 }, (err, stdout, stderr) => {
       if (err) return rej(err);
       if (stderr) console.warn("Stderr: " + stderr);
       res(stdout);
