@@ -10,8 +10,10 @@ _This is a heavy Work-In-Progress! May not work for your usecase!_
 
 - Search for Files & Symbols across the whole project with one command: `Search for Symbol or File`
 - Support for all langauges, [that ctags support](https://github.com/universal-ctags/ctags/tree/master/parsers)
-- Weighted fuzzy-search to prefer e.g. _file_-result over _property_-results 
 - Additional (basic) Support for Dart
+- Weighted fuzzy-search to prefer e.g. _file_-result over _property_-results 
+- Use `.extension` in your search to only show files with that exact extension
+- Use `/file/path` in your search to only show files with a fuzzy matching path
 
 ## Requirements
 
@@ -25,10 +27,9 @@ Please take a look at the [CHANGELOG.md](CHANGELOG.md) File.
 
 ## Extension Settings
 
-_No Settings as of now_
+_See `package.json` for a list of settings & and there defaults_
 
 ## ToDos & Improvements:
-- Add a special syntax/keywords to limit your search to a folder or file-extension _(most usecases are covered by just appending your search with the folder or extension)_
 - Add _not found_-Options e.g. do a full-text-search, search git history, etc.
 - Add more user facing errors: e.g. CTags is not installed, No Workspace is opened, etc.
 - Add Tests
