@@ -46,6 +46,7 @@ export const getScoreModifiers: () => Record<
   enum: 1,
   enumerator: 1,
   id: 1,
+  mixin: 1,
   currentFile: 0.5,
   ...(workspace.getConfiguration("symbol-seeker").get("scoreModifiers") ?? {}),
 });

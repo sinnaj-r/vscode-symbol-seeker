@@ -1,7 +1,7 @@
 {
   "name": "vs-symbol-seeker",
   "displayName": "Symbol Seeker",
-  "description": "Fast workspace-wide fuzzy search for symbols & files, powered by ctags.",
+  "description": "Fast workspace-wide fuzzy search for symbols & files, powered by cTags.",
   "publisher": "dock51",
   "version": "0.0.7",
   "engines": {

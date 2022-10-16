@@ -9,10 +9,10 @@
   "rules": {
     "@typescript-eslint/naming-convention": "warn",
     "@typescript-eslint/semi": "warn",
-    "curly": "warn",
+    "curly": ["warn", "multi-or-nest"],
     "eqeqeq": "warn",
     "no-throw-literal": "warn",
-    "semi": ["multi-line", "warn"]
+    "semi": "warn"
   },
   "ignorePatterns": ["out", "dist", "**/*.d.ts"]
 }

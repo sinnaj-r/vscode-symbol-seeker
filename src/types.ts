@@ -19,12 +19,13 @@ export type CTagJson = {
     | "variable"
     | "enum"
     | "enumerator"
-    | "id";
+    | "id"
+    | "mixin";
   scope: string | null;
-  scopeKind: "function" | "interface" | "namespace" | "method" | null;
+  scopeKind: "function" | "interface" | "namespace" | "method" | "mixin" | null;
 };
 
-export interface CTagLine extends QuickPickItem {
+export interface CTagQuickPickItem extends QuickPickItem {
   line: number;
   path: string;
   tagKind: CTagJson["kind"];

@@ -15,13 +15,14 @@ import {
 import { forceRefreshCmd } from "./commands/forceRefreshCmd";
 import { searchCmd } from "./commands/searchCmd";
 import { setExtensionPath } from "./ExtensionPath";
-import { getWsPath } from "./helpers";
+import { getWsPaths } from "./helpers";
 
 let watcher: FileSystemWatcher;
 
 export function activate(context: ExtensionContext) {
   console.log(
-    'The extension "symbol-seeker" is now active! In Workspace: ' + getWsPath()
+    'The extension "symbol-seeker" is now active! In Workspace Folders: ' +
+      getWsPaths()
   );
 
   setExtensionPath(context.extensionPath);
@@ -29,8 +30,7 @@ export function activate(context: ExtensionContext) {
 
   console.log("Init run with status " + cacheManagerInstance?.status);
 
-  const key = `status-${getWsPath()}`;
-  if (cacheManagerInstance?.status == Status.NotInitialized)
+  if (cacheManagerInstance?.status == Status.notInitialized)
     cacheManagerInstance!.tryInitializeCache();
 
   const registeredSearchCmd = commands.registerCommand(
@@ -48,12 +48,12 @@ export function activate(context: ExtensionContext) {
   watcher.onDidChange((uri) => {
     if (uri.fsPath.endsWith(".gitignore"))
       cacheManagerInstance?.updateExclusions();
-    else cacheManagerInstance?.updateCacheForFile(uri.fsPath);
+    else cacheManagerInstance?.initializeCacheForFile(uri.fsPath);
   });
   watcher.onDidCreate((uri) => {
     if (uri.fsPath.endsWith(".gitignore"))
       cacheManagerInstance?.updateExclusions();
-    else cacheManagerInstance?.updateCacheForFile(uri.fsPath);
+    else cacheManagerInstance?.initializeCacheForFile(uri.fsPath);
   });
   watcher.onDidDelete((uri) => {
     if (uri.fsPath.endsWith(".gitignore"))
@@ -68,8 +68,8 @@ export function activate(context: ExtensionContext) {
 // this method is called when your extension is deactivated
 export function deactivate() {
   console.log(
-    'The extension "symbol-seeker" is now INactive! In Workspace: ' +
-      getWsPath()
+    'The extension "symbol-seeker" is now INactive! In Workspace Folders: ' +
+      getWsPaths()
   );
   // Disable Watcher
   watcher?.dispose();

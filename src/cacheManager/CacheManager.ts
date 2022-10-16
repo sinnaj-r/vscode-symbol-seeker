@@ -1,20 +1,23 @@
 import { existsSync, readFileSync } from "fs";
 import { Memento, workspace } from "vscode";
-import { execCmd, getWsPath, groupBy, tagIsPrivateConstant } from "../helpers";
+import { getWsPaths, groupBy, tagIsPrivateConstant } from "../helpers";
 import { getFileExclusions, getSymbolExclusions } from "../settings";
 import * as cp from "child_process";
 import { CTagJson } from "../types";
-import { generateCTagsCmd } from "./generateCTagsCmd";
+import { generateCTagsCmd, runCTagsCmd } from "./generateCTagsCmd";
+import { generateExclusions } from "./generateExclusions";
 
 export type FileTagsRecord = Record<string, CTagJson[]>;
 export type CacheType = Record<string, CTagJson[] | undefined>;
 
 export enum Status {
-  NotInitialized,
-  Initializing,
-  Initialized,
+  notInitialized,
+  initializing,
+  initialized,
 }
-
+/**
+ * This class manges the cache for the found CTags.
+ */
 export class CacheManager {
   workspaceState: Memento;
   exclusions: string[];
@@ -22,159 +25,183 @@ export class CacheManager {
 
   constructor(workspaceState: Memento) {
     this.workspaceState = workspaceState;
-    this.exclusions = this.getExclusions();
-    this.status = Status.NotInitialized;
+    this.exclusions = generateExclusions();
+    this.status = Status.notInitialized;
   }
 
+  /**
+   * Updates a specific key in the cache
+   * @param key
+   * @param value
+   */
   private async update(key: string, value: CTagJson[] | undefined) {
     const original = this.workspaceState.get<CacheType>("cache") ?? {};
     original[key] = value;
-    await this.workspaceState.update("cache", original);
+    await this.updateCache(original);
     //await this.workspaceState.update(key, value);
   }
 
+  /**
+   * Sets a specific CTag Array in the cache
+   * @param key
+   * @param value
+   */
   async set(key: string, value: CTagJson[]) {
     await this.update(key, value);
   }
 
-  async updateCache(cache: CacheType) {
+  /**
+   * Updates the whole cache object
+   * @param cache
+   */
+  private async updateCache(cache: CacheType) {
     await this.workspaceState.update("cache", cache);
   }
 
+  /**
+   * Clears the value for a specific key
+   * @param key
+   */
   async clear(key: string) {
     await this.update(key, undefined);
   }
 
+  /**
+   * Clears the whole Cache
+   */
   async clearCache() {
     await this.workspaceState.update("cache", undefined);
   }
 
-  // unused, remove ?
+  /**
+   * Gets the cache value for a specific key
+   *
+   * @unused
+   * @param key
+   * @returns
+   */
   get(key: string): CTagJson[] {
     return this.getCache()[key] ?? [];
   }
 
+  /**
+   * Returns the whole Cache Object
+   * @returns
+   */
   getCache() {
     return this.workspaceState.get<CacheType>("cache") ?? {};
   }
+
+  /**
+   * Returns all Paths in the Cache
+   * @returns
+   */
   getAllPaths() {
     return Object.keys(this.getCache());
   }
 
+  /**
+   * Returns a List of all CTags in the Cache
+   * @returns
+   */
   getAllTags(): CTagJson[] {
     return Object.values(this.getCache())
       .filter<CTagJson[]>((i): i is CTagJson[] => !!i)
       .flat();
   }
 
+  /**
+   * Updates the exclusions for this cache instance
+   */
+  updateExclusions() {
+    this.exclusions = generateExclusions();
+  }
+
+  /**
+   * Initializes the cache (async) if it's not already initializing
+   * @returns
+   */
   tryInitializeCache() {
-    if (this.status == Status.Initializing) return;
-    this.status = Status.Initializing;
+    if (this.status === Status.initializing) return;
+
+    this.status = Status.initializing;
 
     this.initializeCache(true);
   }
 
+  /**
+   * Initializes the cache for all files in the current ws
+   * @param ignoreStatus
+   * @returns
+   */
   async initializeCache(ignoreStatus = false) {
-    if (!ignoreStatus && this.status == Status.Initializing) return;
+    if (!ignoreStatus && this.status === Status.initializing) return;
 
-    if (!ignoreStatus) this.status = Status.Initializing;
+    if (!ignoreStatus) this.status = Status.initializing;
 
     console.time("Initialized Symbol Cache in");
 
     await this.clearCache();
 
-    const ctags = await this.loadTagsForAllFiles();
-    this.updateCache(ctags);
+    const cTags = await this.execCTagsForAllFiles();
+    this.updateCache(cTags);
 
     console.timeEnd("Initialized Symbol Cache in");
     console.log(
-      `Initialized Cache for ${Object.keys(ctags).length} paths with ${
-        Object.values(ctags).flat().length
+      `Initialized Cache for ${Object.keys(cTags).length} paths with ${
+        Object.values(cTags).flat().length
       } tags`
     );
-    this.status = Status.Initialized;
+    this.status = Status.initialized;
   }
 
-  updateExclusions() {
-    this.exclusions = this.getExclusions();
-  }
+  /**
+   * Re-Init the cache for a specific file
+   * @param path
+   * @returns
+   */
+  async initializeCacheForFile(path: string) {
+    if (this.status === Status.initializing) return;
 
-  async updateCacheForFile(path: string) {
-    if (this.status == Status.Initializing) return;
     console.log("Updating Cache for " + path);
-    const cTags = await this.loadTagsForFile(path);
+    const cTags = await this.execCTagsForFile(path);
     await this.set(path, cTags);
   }
 
-  private getExclusions(): string[] {
-    const wsPath = getWsPath();
-    if (!wsPath) return [];
-    const exclusions = [...getFileExclusions()];
-    if (existsSync(`${wsPath}/.gitignore`)) {
-      const data = readFileSync(`${wsPath}/.gitignore`, "utf8");
-      exclusions.push(
-        ...data
-          .trim()
-          .split("\n")
-          .map((line) => line.trim())
-          .filter((line) => !!line)
-          // Exclude Comments and Globs
-          .filter(
-            (line) =>
-              !line.startsWith("#") &&
-              !line.includes("**") &&
-              !line.includes("~") &&
-              !line.includes("?")
-          )
-          .filter((line) => !line.startsWith("#"))
-      );
-    }
-    return exclusions;
-  }
-
-  private async runCTagsCmd(path: string) {
-    const cmd = generateCTagsCmd(path, this.exclusions);
-
-    console.time("Executed ctags cmd in");
-    const result = await execCmd(cmd);
-    console.timeEnd("Executed ctags cmd in");
-
-    const cTagsUnfiltered: CTagJson[] = JSON.parse(
-      `[${result.trim().split("\n").join(",")}]`
-    );
-    const symbolExclusions = getSymbolExclusions();
-
-    const cTags = cTagsUnfiltered.filter(
-      (tag) =>
-        !symbolExclusions.includes(tag.name.toLocaleLowerCase()) &&
-        // We want to ignore constants in method bodies,
-        // as they are most likely just a "temporary" variable
-        // e.g. in TypeScript this is very usual
-        !tagIsPrivateConstant(tag)
-    );
-
-    return cTags;
-  }
-
-  private async loadTagsForAllFiles(): Promise<FileTagsRecord> {
-    const wsPath = getWsPath();
+  /**
+   * Runs a CTag Cmd for all files in the workspace
+   * @returns
+   */
+  private async execCTagsForAllFiles(): Promise<FileTagsRecord> {
+    const wsPath = getWsPaths();
     if (!wsPath) return {};
 
     // ws-path is folder without '/'
-    const cTags = await this.runCTagsCmd(wsPath + "/");
+    const cTags = await runCTagsCmd(
+      wsPath.map((path) => path + "/"),
+      this.exclusions
+    );
 
     return groupBy(cTags, ({ path }) => path);
   }
 
-  private async loadTagsForFile(path: string) {
-    const wsPath = getWsPath();
-    if (!wsPath) return [];
+  /**
+   * Runs a CTag Cmd for a specific file
+   * @param path
+   * @returns
+   */
+  private async execCTagsForFile(path: string) {
+    const wsPath = getWsPaths();
+    if (!wsPath?.length ?? 0 < 1) return [];
 
-    const cTags = await this.runCTagsCmd(path);
+    const cTags = await runCTagsCmd([path], this.exclusions);
     return cTags;
   }
 }
 
+/**
+ * This is the main CacheManager used in the extension
+ */
 export let cacheManagerInstance: CacheManager | undefined;
 export const createCacheManager = (workspaceState: Memento) => {
   cacheManagerInstance = new CacheManager(workspaceState);

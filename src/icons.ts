@@ -14,4 +14,5 @@ export const ICON_MAPPING: Record<CTagJson["kind"], string> = {
   enum: "symbol-enum",
   enumerator: "symbol-enum-member",
   id: "key",
+  mixin: "symbol-class",
 };

@@ -15,5 +15,8 @@
 # Class Definition
 --regex-dart=/^[ \t]*class[ \t]+([a-zA-Z0-9_]+)/\1/c,class/
 
+# Mixin Definition
+--regex-dart=/^[ \t]*mixin[ \t]+([a-zA-Z0-9_]+)/\1/m,mixin/
+
 # Method Definition
 --regex-dart=/^[ \t]*([ \t]static[ \t])?([a-zA-Z0-9_<>]+)[ \t]+([a-zA-Z0-9_]+)[ \t]*\(/\3/f,function/

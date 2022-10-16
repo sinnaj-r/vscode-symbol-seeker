@@ -2,81 +2,56 @@
 // Import the module and reference it with the alias vscode in your code below
 import {
   window as vscWindow,
-  workspace,
   Uri,
   Position,
   Range,
   TextEditorRevealType,
   Selection,
 } from "vscode";
-import * as cp from "child_process";
-import * as fs from "fs";
 import * as path from "path";
 
-import { ICON_MAPPING } from "../icons";
-import { CTagJson, CTagLine } from "../types";
+import { CTagQuickPickItem } from "../types";
 import { cacheManagerInstance, Status } from "../cacheManager/CacheManager";
-import { debounce, getWsPath } from "../helpers";
-import { getScoreModifiers } from "../settings";
+import {
+  applyModifier,
+  cTagToQuickPickItem,
+  debounce,
+  getWsPaths,
+  removeWsPathsFromPath,
+} from "../helpers";
 import * as FuseImport from "fuse.js";
 import type F from "fuse.js";
+import { extensionRegex, pathRegex } from "../regexps";
 
-const Fuse: typeof FuseImport.default = FuseImport as any;
-
-const wsPath = getWsPath();
-const scoreModifiers = getScoreModifiers();
-
-// Match the "."-Operator for extension search
-const extensionRegex = /\.[a-zA-Z.]{1,10}/;
-// Match the "/"-Operator for path search
-const pathRegex = /\/([\w/.]+)/;
-
-const applyModifier = (item: F.FuseSortFunctionArg, editorFile: string) => {
-  const modifiedScore =
-    (item.score ?? 0) *
-    (editorFile == (item.item[2] as any).v
-      ? scoreModifiers["currentFile"]
-      : scoreModifiers[(item.item[4] as any).v as keyof typeof scoreModifiers]);
-
-  //@ts-ignore
-  item.modifiedScore = modifiedScore;
-  return modifiedScore;
-};
-
-const cTagToItem = (
-  { name, path: ctagPath, line, kind }: CTagJson,
-  cTagNames: string[] = [],
-  editorFile: string
-): CTagLine => {
-  // Does a symbol with the same name exists ?
-  // -> Add additional context for the user
-  const isDuplicate = cTagNames.includes(name.toLocaleLowerCase());
-
-  return {
-    label: `${
-      editorFile == path.basename(ctagPath) ? "$(chevron-right)" : ""
-    } $(${ICON_MAPPING[kind] ?? ""}) ${name} ${
-      isDuplicate ? `(${path.extname(ctagPath)})` : ""
-    }`.trim(),
-    description:
-      ctagPath.replace(wsPath!, "") + (isDuplicate ? `:${line}` : ""),
-    line,
-    path: ctagPath,
-    tagKind: kind,
-    alwaysShow: true,
-  };
-};
+const FUSE: typeof FuseImport.default = FuseImport as any;
+const wsPaths = getWsPaths();
 
 export const searchCmd = async () => {
-  const quickPick = vscWindow.createQuickPick<CTagLine>();
+  const quickPick = vscWindow.createQuickPick<CTagQuickPickItem>();
   (quickPick as any).sortByLabel = false;
 
   quickPick.title = "Search for a Symbol or File";
 
-  if (!wsPath) return;
+  if (!wsPaths) return;
 
-  if (cacheManagerInstance?.status == Status.NotInitialized)
+  if (cacheManagerInstance?.status === Status.notInitialized) {
+    quickPick.items = [
+      { label: "Please wait", path: "", line: 0, tagKind: "class" },
+    ];
+    quickPick.show();
     await cacheManagerInstance?.initializeCache();
+  } else if (cacheManagerInstance?.status === Status.initializing) {
+    quickPick.items = [
+      {
+        label: "Initializing, please try later",
+        path: "",
+        line: 0,
+        tagKind: "class",
+      },
+    ];
+    quickPick.show();
+    return;
+  }
 
   const cTags = cacheManagerInstance?.getAllTags() ?? [];
   const cTagNames = cTags.map(({ name }) => name.toLocaleLowerCase());
@@ -86,7 +61,7 @@ export const searchCmd = async () => {
   );
 
   //TODO: Persist instance over multiple searches (in Cache Manager)
-  const fuse = new Fuse(cTags, {
+  const fuse = new FUSE(cTags, {
     keys: [
       {
         name: "name",
@@ -107,7 +82,7 @@ export const searchCmd = async () => {
       // Add the full path to allow somewhat fuzzy file navigation
       {
         name: "path",
-        getFn: (item) => path.dirname(item.path).replace(wsPath, ""),
+        getFn: (item) => removeWsPathsFromPath(path.dirname(item.path)),
       },
       // Just added for sorting
       { name: "kind", weight: 0.01 },
@@ -120,7 +95,7 @@ export const searchCmd = async () => {
 
   quickPick.items = fuse
     .search("")
-    .map((i) => cTagToItem(i.item, undefined, editorFile));
+    .map((i) => cTagToQuickPickItem(i.item, undefined, editorFile));
 
   quickPick.onDidChangeValue(
     debounce((term: string) => {
@@ -149,7 +124,7 @@ export const searchCmd = async () => {
       });
 
       quickPick.items = items.map((item) =>
-        cTagToItem(item.item, cTagNames, editorFile)
+        cTagToQuickPickItem(item.item, cTagNames, editorFile)
       );
     }, 50)
   );
@@ -157,10 +132,13 @@ export const searchCmd = async () => {
   quickPick.onDidAccept(async () => {
     const item = quickPick.activeItems[0];
     const { line, path } = item;
+    // This is the case for the "please wait" item
+    if (!path) return;
+
     console.log("Selected Item: " + JSON.stringify(item));
     console.log(
       "Other Tags on file: " +
-        JSON.stringify(cTags.filter(({ path: p }) => p == path))
+        JSON.stringify(cTags.filter(({ path: p }) => p === path))
     );
 
     const uri = Uri.file(path);
