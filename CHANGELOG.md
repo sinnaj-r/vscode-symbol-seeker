@@ -2,6 +2,10 @@
 
 All notable changes to the "symbol-seeker" extension will be documented in this file.
 
+## [0.0.8]
+- Add support for multi folder workspaces
+- internal refactoring & documentation improvements
+
 ## [0.0.7]
 - Add the "." Operator to search for a specific file extension
 - Add the "/" Operator to search for a specific file path
