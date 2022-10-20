@@ -48,8 +48,8 @@ export const tagIsPrivateConstant = ({ kind, scopeKind }: CTagJson) =>
  */
 export const removeWsPathsFromPath = (path: string) => {
   var newPath = path;
-  const wsPaths = getWsPaths();
-  for (const wsPath in wsPaths) newPath = newPath.replace(wsPath, "");
+  const wsPaths = getWsPaths() ?? [];
+  for (const wsPath of wsPaths) newPath = newPath.replace(wsPath, "");
 
   return newPath;
 };

@@ -21,7 +21,7 @@ import {
 } from "../helpers";
 import * as FuseImport from "fuse.js";
 import type F from "fuse.js";
-import { extensionRegex, pathRegex } from "../regexps";
+import { extensionRegex, fileNameRegex, pathRegex } from "../regexps";
 
 const FUSE: typeof FuseImport.default = FuseImport as any;
 const wsPaths = getWsPaths();
@@ -79,9 +79,9 @@ export const searchCmd = async () => {
         getFn: (item) => path.basename(item.path),
         weight: 0.9,
       },
-      // Add the full path to allow somewhat fuzzy file navigation
+      // Add the relative ws path to allow somewhat fuzzy file navigation
       {
-        name: "path",
+        name: "relativePath",
         getFn: (item) => removeWsPathsFromPath(path.dirname(item.path)),
       },
       // Just added for sorting
@@ -101,18 +101,25 @@ export const searchCmd = async () => {
     debounce((term: string) => {
       const additionalOptions: F.Expression = { $and: [] };
 
-      // Search for the "."-Operator
-      const extensionMatch = extensionRegex.exec(term);
-      if (extensionMatch) {
-        additionalOptions["$and"]?.push({ extension: `'${extensionMatch[0]}` });
-        term = term.replace(extensionMatch[0], "").trim();
+      // Search for the "$"-Operator
+      const fileNameMatch = fileNameRegex.exec(term);
+      if (fileNameMatch) {
+        additionalOptions["$and"]?.push({ filename: `^${fileNameMatch[1]}` });
+        term = term.replace(fileNameMatch[0], "").trim();
       }
 
       // Search for the "/"-Operator
       const pathMatch = pathRegex.exec(term);
       if (pathMatch) {
-        additionalOptions["$and"]?.push({ path: `${pathMatch[1]}` });
+        additionalOptions["$and"]?.push({ relativePath: `${pathMatch[1]}` });
         term = term.replace(pathMatch[0], "").trim();
+      }
+
+      // Search for the "."-Operator
+      const extensionMatch = extensionRegex.exec(term);
+      if (extensionMatch) {
+        additionalOptions["$and"]?.push({ extension: `'${extensionMatch[0]}` });
+        term = term.replace(extensionMatch[0], "").trim();
       }
 
       // Only search in name & filename by default

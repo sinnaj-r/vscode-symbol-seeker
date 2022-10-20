@@ -28,7 +28,6 @@ export const runCTagsCmd = async (paths: string[], exclusions: string[]) => {
   const cTagsUnfiltered: CTagJson[] = [];
   for (const path of paths) {
     const cmd = generateCTagsCmd(path, exclusions);
-    console.log(cmd);
 
     console.time(`[${path}] Executed cTags cmd in`);
     const result = await execShellCmd(cmd);
