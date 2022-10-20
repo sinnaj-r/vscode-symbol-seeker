@@ -19,6 +19,7 @@ _This is a heavy Work-In-Progress! May not work for your usecase!_
 - Special commands:
   - Use `.extension` in your search to only show files with that exact extension
   - Use `/file/path` in your search to only show files with a fuzzy matching path
+  - Use `$filename` in your search to only show files with a prefix-matching filename
 
 ## Requirements
 
